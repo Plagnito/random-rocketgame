@@ -1,0 +1,16 @@
+{
+  "titre": "Apogee",
+  "description": "Pilot a stubborn little rocket as high as the sky allows. Dodge birds, storms, planes and asteroids, catch fuel before the tanks run dry, and outclimb your own best.",
+  "emoji": "🚀",
+  "couleur": "#ff7a45",
+  "tags": ["game", "arcade", "space", "rocket"],
+  "capacites": {
+    "progression": true,
+    "identite": true,
+    "classement": {
+      "sens": "desc",
+      "unite": "mètres",
+      "titre": "Highest climbs"
+    }
+  }
+}
