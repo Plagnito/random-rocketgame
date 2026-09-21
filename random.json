@@ -1,6 +1,6 @@
 {
   "titre": "Apogee",
-  "description": "Pilot a stubborn little rocket as high as the sky allows. Dodge birds, storms, planes and asteroids, catch fuel before the tanks run dry, and outclimb your own best.",
+  "description": "Pilot a stubborn little rocket as high as the sky allows. Dodge the traffic, glide out of flame-outs, spell A·P·O·G·E·E, and spend your stars in the garage between flights.",
   "emoji": "🚀",
   "couleur": "#ff7a45",
   "tags": ["game", "arcade", "space", "rocket"],
@@ -11,6 +11,20 @@
       "sens": "desc",
       "unite": "mètres",
       "titre": "Highest climbs"
-    }
+    },
+    "succes": [
+      { "id": "premier-vol", "titre": "Baptême de l'air", "texte": "Terminer un premier vol." },
+      { "id": "etage-2", "titre": "Corridor aérien", "texte": "Atteindre le corridor aérien, à 1 500 m." },
+      { "id": "orbite-profonde", "titre": "Orbite profonde", "texte": "Percer jusqu’à l’orbite profonde, à 12 000 m." },
+      { "id": "vingt-mille", "titre": "Au-delà de vingt mille", "texte": "Franchir 20 000 m en un seul vol." },
+      { "id": "etoiles-10", "titre": "Poignée d'étoiles", "texte": "Attraper 10 étoiles en un seul vol." },
+      { "id": "mot-apogee", "titre": "Le mot magique", "texte": "Réunir les six lettres A·P·O·G·E·E en un vol." },
+      { "id": "relight", "titre": "Redémarrage en vol", "texte": "Rallumer le moteur en pleine chute libre." },
+      { "id": "frisson-5", "titre": "Effleurer le danger", "texte": "Cinq frissons en un seul vol." },
+      { "id": "sur-un-fil", "titre": "Sur un fil", "secret": true, "texte": "Finir un vol au-delà de 3 000 m avec une seule plaque de coque." },
+      { "id": "pilote-20", "titre": "Pilote vétéran", "texte": "Cumuler 20 vols." },
+      { "id": "anneau-1", "titre": "Premier anneau", "texte": "Traverser un anneau turbo." },
+      { "id": "mecano", "titre": "Mécano du dimanche", "texte": "Acheter une amélioration au garage." }
+    ]
   }
 }
