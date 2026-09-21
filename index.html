@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#070b18" />
+    <meta name="description" content="Apogee — pilot a stubborn little rocket as high as the sky allows. Dodge the traffic, catch the fuel, outclimb your best." />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta property="og:title" content="Apogee" />
+    <meta property="og:description" content="A little rocket, one sky, and everything in the way. How high can you climb?" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://random.plagnito.com/a/rocketgame/" />
+    <link rel="canonical" href="https://random.plagnito.com/a/rocketgame/" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🚀%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./style.css" />
+    <title>Apogee</title>
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+    <main class="app-shell">
+      <header class="topbar">
+        <div class="brand-lockup">
+          <div class="brand-mark" aria-hidden="true">🚀</div>
+          <div>
+            <p class="eyebrow">ATMOSPHERE ESCAPE SERVICE</p>
+            <h1>Apogee</h1>
+          </div>
+        </div>
+        <div class="top-actions">
+          <div class="identity-chip"><span class="online-dot"></span><span id="playerName">CADET</span></div>
+          <button class="icon-button" id="soundButton" type="button" aria-label="Toggle sound">🔊</button>
+          <button class="ghost-button" id="helpButton" type="button">Flight manual</button>
+        </div>
+      </header>
+
+      <section class="stage" id="stage">
+        <canvas id="sky" aria-label="Rocket climbing game area"></canvas>
+
+        <div class="hud" id="hud" hidden>
+          <div class="hud-top">
+            <div class="hud-block altitude-block">
+              <span class="hud-label">ALTITUDE</span>
+              <strong class="hud-altitude"><span id="altitudeLabel">0</span><small>m</small></strong>
+              <span class="hud-sub"><span id="layerLabel">LOW SKY</span><i>·</i><span id="speedLabel">0 km/h</span></span>
+            </div>
+            <div class="hud-block gauge-block">
+              <span class="hud-label">FUEL</span>
+              <div class="fuel-track"><span id="fuelBar"></span></div>
+              <span class="hud-sub" id="fuelLabel">100%</span>
+            </div>
+            <div class="hud-block hull-block">
+              <span class="hud-label">HULL</span>
+              <div class="hull-pips" id="hullPips"><i></i><i></i><i></i></div>
+            </div>
+            <div class="hud-block stars-block">
+              <span class="hud-label">STARS</span>
+              <strong id="starsLabel">0</strong>
+            </div>
+            <div class="hud-block letters-block">
+              <span class="hud-label">THE WORD</span>
+              <div class="letter-slots" id="letterSlots"><b>A</b><b>P</b><b>O</b><b>G</b><b>E</b><b>E</b></div>
+            </div>
+          </div>
+          <div class="hud-best" id="bestChip" hidden>BEST · <b id="bestChipValue">0 m</b></div>
+        </div>
+
+        <div class="countdown" id="countdown" hidden><span id="countdownLabel">3</span></div>
+
+        <section class="home-screen" id="homeScreen">
+          <div class="home-hero">
+            <div class="hero-orbit orbit-one"></div>
+            <div class="hero-orbit orbit-two"></div>
+            <div class="hero-rocket" aria-hidden="true">
+              <span class="hero-flame"></span>
+              <span class="rocket-body">🚀</span>
+              <span class="spark spark-a">✦</span>
+              <span class="spark spark-b">·</span>
+              <span class="spark spark-c">✧</span>
+            </div>
+            <p class="eyebrow">ONE ROCKET / ONE SKY / NO CEILING</p>
+            <h2>How high<br /><em>can you climb?</em></h2>
+            <p class="hero-copy">Steer a stubborn little rocket through birds, storms, planes and meteor showers. Catch fuel cells to keep the tanks alive, thread the traffic, and punch through four layers of sky into deep orbit.</p>
+            <div class="home-actions">
+              <button class="primary-button" id="startButton" type="button"><span>Ignite the engines</span><b>→</b></button>
+              <button class="secondary-button daily-button" id="dailyButton" type="button">☀️ Daily flight · <span id="dailyDateLabel">…</span></button>
+              <button class="secondary-button" id="garageButton" type="button">⚙ Garage</button>
+              <button class="secondary-button" id="trophiesButton" type="button">🏆 Trophies</button>
+              <button class="secondary-button" id="leaderboardButton" type="button" hidden>Highest climbs ↗</button>
+            </div>
+            <div class="home-facts">
+              <span><b id="bestRunLabel">—</b> BEST CLIMB</span>
+              <span><b id="flightsLabel">0</b> FLIGHTS</span>
+              <span><b id="totalStarsLabel">0</b> STARS BANKED</span>
+              <span><b id="trophiesCountLabel">0/13</b> TROPHIES</span>
+            </div>
+          </div>
+          <div class="home-lower">
+            <div class="mini-panel"><span class="mini-icon">⟟</span><div><strong>THE BRIEF</strong><p>The pad crew fuels you up. Everything above is your problem.</p></div></div>
+            <div class="mini-panel"><span class="mini-icon">◈</span><div><strong>THE SHIP</strong><p>Three hull plates, one hungry engine, and a full tank — for about a minute.</p></div></div>
+            <div class="mini-panel"><span class="mini-icon">✦</span><div><strong>THE SKY</strong><p>Low sky, air corridor, high frontier, deep orbit. Each one bites harder.</p></div></div>
+          </div>
+        </section>
+
+        <div class="pause-banner" id="pauseBanner" hidden>PAUSED — PRESS P TO RESUME</div>
+        <button class="boost-pad" id="boostPad" type="button" aria-label="Hold to boost">BOOST</button>
+      </section>
+
+      <footer class="footer">
+        <span>APO / v1.1.0</span>
+        <span class="desktop-hint">← → STEER · HOLD ↑ OR SPACE TO BOOST</span>
+        <span class="touch-hint">DRAG TO STEER · HOLD BOOST TO BURN</span>
+        <span>NO SERVER • NO ACCOUNTS REQUIRED • JUST THRUST</span>
+      </footer>
+    </main>
+
+    <div class="modal-backdrop" id="modalBackdrop" hidden>
+      <section class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <button class="modal-close" id="modalClose" type="button" aria-label="Close">×</button>
+        <p class="eyebrow" id="modalEyebrow">FLIGHT MANUAL</p>
+        <h2 id="modalTitle">Apogee</h2>
+        <div id="modalBody"></div>
+        <div class="modal-actions" id="modalActions"></div>
+      </section>
+    </div>
+    <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+    <noscript><div class="no-script">This rocket needs JavaScript to leave the pad.</div></noscript>
+    <script src="./app.js" defer></script>
+  </body>
+</html>
