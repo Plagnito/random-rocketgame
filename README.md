@@ -11,7 +11,9 @@ A little game for Random where a rocket has to climb as much as possible. One ro
 - **Turbo rings** give three seconds of free ×1.5 climb; **grazing** an obstacle (a *frisson*) grants 1.5% fuel.
 - A dry tank is not the end: the rocket **glides**, and catching anything flammable **relights the engine**.
 - Six golden letters — **A·P·O·G·E·E** — hide along the climb. The full word fills the tanks and shields the hull for four seconds.
-- Between flights, the **garage** trades banked stars for a bigger tank, extra hull, better injectors and a pickup magnet; the **trophy shelf** tracks twelve achievements.
+- Markers on the top edge of the sky point at incoming letters, repair kits and low-tank fuel.
+- Between flights, the **garage** trades banked stars for a bigger tank, extra hull, better injectors and a pickup magnet — and the **paint shop** sells cosmetic liveries; the **trophy shelf** tracks thirteen achievements.
+- The **daily flight** gives every pilot the exact same date-seeded sky for the day; retry it as much as you like before midnight.
 - **P** pauses. Altitude reached is the score.
 
 The game works locally, and uses the Atlas Random v2 capabilities (progression, identity, leaderboard, achievements) when they are actually granted. Without them, everything — including trophies and garage purchases — falls back to `localStorage`.

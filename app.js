@@ -12,10 +12,30 @@
   const $ = (sel) => document.querySelector(sel);
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
   const lerp = (a, b, t) => a + (b - a) * t;
-  const rand = (a, b) => a + Math.random() * (b - a);
+  const rand = (a, b) => a + rng() * (b - a);
   const fmt = (n) => Math.round(n).toLocaleString('en-US');
   const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const REDUCED = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Seeded randomness: the daily flight swaps Math.random for a date-seeded PRNG
+  // so every pilot on Earth flies the exact same sky that day.
+  let rng = Math.random;
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function dailySeed() {
+    const d = new Date();
+    return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+  }
+  function dailyLabel() {
+    const d = new Date();
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+  }
 
   function hexRgb(hex) {
     const m = /^#?([0-9a-f]{6})$/i.exec(hex);
@@ -63,6 +83,8 @@
   profile.muted = !!profile.muted;
   profile.upgrades = Object.assign({ tank: 0, hull: 0, boost: 0, magnet: 0 }, profile.upgrades || {});
   profile.succes = profile.succes && typeof profile.succes === 'object' ? profile.succes : {};
+  profile.skins = Array.isArray(profile.skins) && profile.skins.length ? profile.skins : ['standard'];
+  profile.skin = typeof profile.skin === 'string' && profile.skins.includes(profile.skin) ? profile.skin : profile.skins[0];
   const persist = () => storage.save(profile);
 
   /* ---------- garage & derived ship stats ---------- */
@@ -92,8 +114,19 @@
     { id: 'sur-un-fil', icon: '🩹', titre: 'Sur un fil', texte: 'Finir un vol au-delà de 3 000 m avec une seule plaque de coque.', secret: true },
     { id: 'pilote-20', icon: '🎖️', titre: 'Pilote vétéran', texte: 'Cumuler 20 vols.' },
     { id: 'anneau-1', icon: '💫', titre: 'Premier anneau', texte: 'Traverser un anneau turbo.' },
-    { id: 'mecano', icon: '🔧', titre: 'Mécano du dimanche', texte: 'Acheter une amélioration au garage.' }
+    { id: 'mecano', icon: '🔧', titre: 'Mécano du dimanche', texte: 'Acheter une amélioration au garage.' },
+    { id: 'vol-du-jour', icon: '🗓️', titre: 'Ponctuel', texte: 'Terminer le vol du jour — le même ciel que tout le monde.' }
   ];
+
+  /* ---------- paint shop (purely cosmetic skins) ---------- */
+  const SKINS = [
+    { id: 'standard', name: 'Pad White', desc: 'The classic service livery.', body: ['#f4f7ff', '#b9c6e2'], nose: '#ff7a45', window: '#7dd3fc', cost: 0 },
+    { id: 'mint', name: 'Mint Comet', desc: 'Fresh enough to make the clouds jealous.', body: ['#eafff4', '#9fdcc0'], nose: '#2fa35e', window: '#0c3a2a', cost: 12 },
+    { id: 'violet', name: 'Ultraviolet', desc: 'Strictly above the visible spectrum.', body: ['#f3edff', '#b8a8e8'], nose: '#7a4fd0', window: '#ffd76b', cost: 16 },
+    { id: 'noir', name: 'Night Cargo', desc: 'For flights the radar should forget.', body: ['#3a4767', '#1d2740'], nose: '#ff7a45', window: '#7dd3fc', cost: 20 },
+    { id: 'gold', name: "Fool's Gold", desc: 'Changes nothing but your mood. Priceless.', body: ['#fff3c4', '#e3b23a'], nose: '#8a5a12', window: '#2b1d05', cost: 30 }
+  ];
+  const currentSkin = () => SKINS.find((s) => s.id === profile.skin) || SKINS[0];
 
   function debloquer(id) {
     if (profile.succes[id]) return;
@@ -250,6 +283,7 @@
 
   const state = {
     mode: 'home', // home | countdown | flying | paused | dying | report
+    runMode: 'normal', // normal | daily (daily = date-seeded sky, same for everyone)
     altitude: 0,
     maxAlt: 0,
     prevBest: profile.best,
@@ -313,7 +347,7 @@
   function pickFromTable(table) {
     let total = 0;
     for (const [, w] of table) total += w;
-    let roll = Math.random() * total;
+    let roll = rng() * total;
     for (const [type, w] of table) { roll -= w; if (roll <= 0) return type; }
     return table[table.length - 1][0];
   }
@@ -329,15 +363,15 @@
   function spawnEntity(forced) {
     let type;
     if (forced) type = forced;
-    else if (state.fuel / maxFuel() < 0.22 && Math.random() < 0.45) type = 'fuel'; // the sky pities the thirsty
+    else if (state.fuel / maxFuel() < 0.22 && rng() < 0.45) type = 'fuel'; // the sky pities the thirsty
     else type = pickFromTable(SPAWN_TABLES[state.layerIdx]);
     const alt = state.altitude;
     switch (type) {
       case 'bird':
-        state.entities.push({ type, x: spawnX(false), y: -50, vx: (Math.random() < 0.5 ? -1 : 1) * rand(28, 72), vy: rand(4, 16), r: 12, phase: rand(0, 6) });
+        state.entities.push({ type, x: spawnX(false), y: -50, vx: (rng() < 0.5 ? -1 : 1) * rand(28, 72), vy: rand(4, 16), r: 12, phase: rand(0, 6) });
         break;
       case 'plane': {
-        const fromLeft = Math.random() < 0.5;
+        const fromLeft = rng() < 0.5;
         state.entities.push({ type, x: fromLeft ? -120 : W + 120, y: rand(-H * 0.45, -70), vx: (fromLeft ? 1 : -1) * rand(150, Math.min(330, 190 + alt / 70)), vy: 0, r: 17, blink: 0, dir: fromLeft ? 1 : -1 });
         break;
       }
@@ -381,8 +415,10 @@
     const alt = state.altitude;
     if (alt < 8200 && state.decor.length < 26) {
       state.decor.push({ kind: 'cloud', x: rand(-60, W + 60), y: -70, s: rand(22, 58), drift: rand(-8, 8), lag: rand(0.82, 0.97), alpha: rand(0.35, 0.8) });
-    } else if (alt >= 10000 && Math.random() < 0.16) {
-      state.decor.push({ kind: 'shooting', x: rand(0, W), y: rand(-100, -40), vx: rand(260, 460) * (Math.random() < 0.5 ? -1 : 1), vy: rand(140, 220), life: 0.9 });
+    } else if (alt >= 5200 && alt < 11800 && rng() < 0.5) {
+      state.decor.push({ kind: 'crystal', x: rand(-40, W + 40), y: -40, lag: rand(0.85, 0.98), rot: rand(0, 6), spin: rand(-2, 2), alpha: rand(0.3, 0.62), drift: rand(-14, 14) });
+    } else if (alt >= 10000 && rng() < 0.16) {
+      state.decor.push({ kind: 'shooting', x: rand(0, W), y: rand(-100, -40), vx: rand(260, 460) * (rng() < 0.5 ? -1 : 1), vy: rand(140, 220), life: 0.9 });
     }
   }
 
@@ -400,10 +436,10 @@
 
   /* ---------- wind gusts ---------- */
   function scheduleWind() {
-    const dir = Math.random() < 0.5 ? -1 : 1;
+    const dir = rng() < 0.5 ? -1 : 1;
     const alt0 = state.altitude + rand(160, 320);
     const zone = { alt0, alt1: alt0 + rand(150, 260), dir, str: rand(55, 115), parts: [] };
-    for (let i = 0; i < 12; i++) zone.parts.push({ x: rand(0, W), f: Math.random() });
+    for (let i = 0; i < 12; i++) zone.parts.push({ x: rand(0, W), f: rng() });
     state.winds.push(zone);
   }
 
@@ -433,6 +469,7 @@
 
   /* ---------- run control ---------- */
   function resetRun() {
+    rng = state.runMode === 'daily' ? mulberry32(dailySeed()) : Math.random;
     state.altitude = 0;
     state.maxAlt = 0;
     state.prevBest = profile.best;
@@ -472,7 +509,8 @@
     updateLettersHud();
   }
 
-  function startCountdown() {
+  function startCountdown(mode) {
+    state.runMode = mode === 'daily' ? 'daily' : 'normal';
     resetRun();
     audio.ensure();
     $('#homeScreen').hidden = true;
@@ -540,6 +578,7 @@
     profile.stars += state.runStars;
     profile.meters += altitude;
     debloquer('premier-vol');
+    if (state.runMode === 'daily') debloquer('vol-du-jour');
     if (state.dyingReason === 'fuel' && state.hull === 1 && altitude >= 3000) debloquer('sur-un-fil');
     if (profile.flights >= 20) debloquer('pilote-20');
     persist();
@@ -568,6 +607,7 @@
       title: isRecord ? 'A new personal apogee' : 'Flight complete',
       force: true,
       body: `
+        ${state.runMode === 'daily' ? `<p class="modal-copy">☀️ Daily sky of ${dailyLabel()} — every pilot on Earth climbed this exact sky today.</p>` : ''}
         <p class="modal-copy">${reasonCopy}</p>
         <div class="final-score">${fmt(altitude)}<small>m</small></div>
         ${isRecord ? '<span class="record-pill">NEW ALTITUDE RECORD</span>' : ''}
@@ -581,7 +621,7 @@
         </div>
         <p class="modal-copy">${submitNote}</p>`,
       actions: [
-        { label: 'Fly again', primary: true, handler: () => { forceCloseModal(); startCountdown(); } },
+        { label: state.runMode === 'daily' ? 'Retry the daily sky' : 'Fly again', primary: true, handler: () => { forceCloseModal(); startCountdown(state.runMode); } },
         { label: 'Garage', handler: () => showGarage() },
         ...(granted.classement ? [{ label: 'Highest climbs', handler: () => showLeaderboard() }] : []),
         { label: 'Back to pad', handler: () => { forceCloseModal(); resetToHome(); } }
@@ -799,7 +839,7 @@
     handleCollisions();
 
     // --- exhaust particles ---
-    if (!REDUCED && Math.random() < dt * (state.boostOn || turbo ? 90 : 46)) {
+    if (!REDUCED && rng() < dt * (state.boostOn || turbo ? 90 : 46)) {
       const r = rocketScreen();
       state.particles.push({
         x: r.x + rand(-4, 4) - Math.sin(rk.tilt) * 18,
@@ -807,13 +847,13 @@
         vx: rand(-18, 18) - rk.vx * 0.12,
         vy: rand(60, 130) + state.vy * 0.35,
         life: rand(0.28, 0.6), age: 0,
-        color: turbo ? '#ffd76b' : Math.random() < 0.5 ? '#ff7a45' : '#ffc46b',
+        color: turbo ? '#ffd76b' : rng() < 0.5 ? '#ff7a45' : '#ffc46b',
         size: rand(1.6, 3.4)
       });
     }
 
     state.shake = Math.max(0, state.shake - dt * 24);
-    audio.setThrottle(turbo ? 1.2 : state.boostOn ? 1 : 0.45, clamp(state.vy / 260, 0, 1));
+    audio.setThrottle((turbo ? 1.2 : state.boostOn ? 1 : 0.45) + state.layerIdx * 0.14, clamp(state.vy / 260, 0, 1));
     updateHud();
   }
 
@@ -950,9 +990,10 @@
     const scroll = state.mode === 'flying' || state.mode === 'dying' ? state.vy * PX : 30;
     for (let i = state.decor.length - 1; i >= 0; i--) {
       const d = state.decor[i];
-      if (d.kind === 'cloud') {
+      if (d.kind === 'cloud' || d.kind === 'crystal') {
         d.y += scroll * d.lag * dt;
         d.x += d.drift * dt;
+        if (d.kind === 'crystal') d.rot += d.spin * dt;
       } else {
         d.y += (scroll * 0.4 + d.vy) * dt;
         d.x += d.vx * dt;
@@ -988,11 +1029,13 @@
 
     drawStarsField(alt);
     drawMoon(alt);
+    drawAurora(alt);
     drawWinds(alt);
     drawDecor();
     drawGround(alt);
     drawBestMarker(alt);
     drawEntities();
+    if (state.mode === 'flying' || state.mode === 'dying') drawPickupRadar();
     drawParticles();
     if (state.mode !== 'home') drawRocket();
     drawDamageFlash();
@@ -1022,6 +1065,56 @@
     ctx.fillStyle = 'rgba(160,170,200,.5)';
     ctx.beginPath(); ctx.arc(mx - 8, my - 5, 6, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.arc(mx + 7, my + 8, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  function drawAurora(alt) {
+    if (alt < 8800) return;
+    const base = clamp((alt - 8800) / 2200, 0, 1);
+    ctx.save();
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 2; i++) {
+      const wobble = Math.sin(state.time * 0.4 + i * 2.1) * 0.5 + 0.5;
+      ctx.strokeStyle = i === 0 ? `rgba(110,240,190,${base * (0.05 + wobble * 0.05)})` : `rgba(140,150,255,${base * (0.045 + (1 - wobble) * 0.05)})`;
+      ctx.lineWidth = 26 + wobble * 10;
+      ctx.beginPath();
+      for (let x = -20; x <= W + 20; x += 28) {
+        const y = H * (0.15 + i * 0.09) + Math.sin(x * 0.008 + state.time * 0.25 + i * 1.7) * 22;
+        if (x === -20) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawPickupRadar() {
+    // top-edge markers: letters & repairs always, fuel when tanks run low (always during the glide)
+    const pct = state.fuel / maxFuel();
+    const colors = { fuel: '#f5a742', star: '#ffd76b', letter: '#ffd76b', repair: '#8ce7a8' };
+    ctx.save();
+    for (const e of state.entities) {
+      if (!PICKUPS.has(e.type)) continue;
+      if (e.y > -8 || e.y < -340) continue;
+      if (e.type === 'star' && pct > 0.25) continue;
+      if (e.type === 'fuel' && pct > 0.45 && state.mode === 'flying') continue;
+      const x = clamp(e.x, 16, W - 16);
+      const a = clamp(1 + e.y / 340, 0.2, 0.9);
+      ctx.globalAlpha = a;
+      ctx.fillStyle = colors[e.type] || '#dfe9ff';
+      ctx.beginPath();
+      ctx.moveTo(x, 7);
+      ctx.lineTo(x - 6, 15);
+      ctx.lineTo(x + 6, 15);
+      ctx.closePath();
+      ctx.fill();
+      if (e.type === 'letter') {
+        ctx.fillStyle = '#3a2a05';
+        ctx.font = '800 8px "Trebuchet MS", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(e.char, x, 13);
+      }
+    }
+    ctx.restore();
     ctx.globalAlpha = 1;
   }
 
@@ -1088,6 +1181,15 @@
         ctx.globalAlpha = d.alpha * clamp((8200 - state.altitude) / 2600, 0, 1);
         ctx.fillStyle = '#e9effc';
         puffCloud(d.x, d.y, d.s);
+        ctx.globalAlpha = 1;
+      } else if (d.kind === 'crystal') {
+        ctx.save();
+        ctx.translate(d.x, d.y);
+        ctx.rotate(d.rot);
+        ctx.globalAlpha = d.alpha * clamp((9000 - Math.abs(8300 - state.altitude)) / 4000, 0.25, 1);
+        ctx.fillStyle = '#dfeaff';
+        ctx.fillRect(-2, -2, 4, 4);
+        ctx.restore();
         ctx.globalAlpha = 1;
       } else {
         ctx.globalAlpha = clamp(d.life * 2, 0, 1);
@@ -1376,6 +1478,7 @@
     const shielded = state.time < state.shieldUntil;
     if (invuln && !shielded && Math.floor(state.time * 14) % 2 === 0) return;
 
+    const skin = currentSkin();
     ctx.save();
     ctx.translate(r.x, r.y);
     ctx.rotate(rk.tilt);
@@ -1405,13 +1508,13 @@
     }
 
     // fins
-    ctx.fillStyle = '#ff7a45';
+    ctx.fillStyle = skin.nose;
     ctx.beginPath(); ctx.moveTo(-8, 8); ctx.lineTo(-15, 19); ctx.lineTo(-8, 17); ctx.closePath(); ctx.fill();
     ctx.beginPath(); ctx.moveTo(8, 8); ctx.lineTo(15, 19); ctx.lineTo(8, 17); ctx.closePath(); ctx.fill();
     // body
     const bg = ctx.createLinearGradient(-8, -20, 8, 20);
-    bg.addColorStop(0, '#f4f7ff');
-    bg.addColorStop(1, '#b9c6e2');
+    bg.addColorStop(0, skin.body[0]);
+    bg.addColorStop(1, skin.body[1]);
     ctx.fillStyle = bg;
     ctx.beginPath();
     ctx.moveTo(0, -24);
@@ -1423,7 +1526,7 @@
     ctx.closePath();
     ctx.fill();
     // nose
-    ctx.fillStyle = '#ff7a45';
+    ctx.fillStyle = skin.nose;
     ctx.beginPath();
     ctx.moveTo(0, -24);
     ctx.quadraticCurveTo(6.4, -12, 7.6, -4);
@@ -1434,7 +1537,7 @@
     // window
     ctx.fillStyle = '#0c1730';
     ctx.beginPath(); ctx.arc(0, 3, 5.4, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#7dd3fc';
+    ctx.fillStyle = skin.window;
     ctx.beginPath(); ctx.arc(-1.4, 1.6, 2.1, 0, Math.PI * 2); ctx.fill();
     // engine base
     ctx.fillStyle = '#3b4c74';
@@ -1485,6 +1588,8 @@
     $('#bestRunLabel').textContent = profile.best > 0 ? `${fmt(profile.best)} m` : '—';
     $('#flightsLabel').textContent = String(profile.flights);
     $('#totalStarsLabel').textContent = String(profile.stars);
+    const tc = $('#trophiesCountLabel');
+    if (tc) tc.textContent = `${Object.keys(profile.succes).length}/${TROPHIES.length}`;
   }
 
   /* ---------- toasts ---------- */
@@ -1587,13 +1692,28 @@
         ${btn}
       </div>`;
     }).join('');
+    const skinRows = SKINS.map((s) => {
+      const owned = profile.skins.includes(s.id);
+      const equipped = profile.skin === s.id;
+      const afford = profile.stars >= s.cost;
+      const btn = equipped
+        ? '<button class="buy-button maxed" type="button" disabled>EQUIPPED</button>'
+        : owned
+          ? `<button class="buy-button" type="button" data-skin-select="${s.id}">EQUIP</button>`
+          : `<button class="buy-button" type="button" data-skin-buy="${s.id}"${afford ? '' : ' disabled'}>★ ${s.cost}</button>`;
+      return `<div class="garage-row">
+        <span class="garage-icon skin-swatch" style="background:linear-gradient(135deg,${s.body[0]},${s.body[1]});border:2px solid ${s.nose}"></span>
+        <div class="garage-info"><strong>${s.name}</strong><p>${s.desc}</p></div>
+        ${btn}
+      </div>`;
+    }).join('');
     openModal({
       eyebrow: 'THE GARAGE',
       title: 'Spend your stars',
-      body: `<div class="garage-balance"><span>STARS BANKED</span><strong>★ ${fmt(profile.stars)}</strong></div>${rows}`,
+      body: `<div class="garage-balance"><span>STARS BANKED</span><strong>★ ${fmt(profile.stars)}</strong></div>${rows}<div class="garage-section">PAINT SHOP — PURE STYLE, ZERO PHYSICS</div>${skinRows}`,
       actions: [
         { label: 'Back to pad', primary: true, handler: () => { forceCloseModal(); resetToHome(); } },
-        ...(state.mode === 'report' ? [{ label: 'Fly again', handler: () => { forceCloseModal(); startCountdown(); } }] : [])
+        ...(state.mode === 'report' ? [{ label: 'Fly again', handler: () => { forceCloseModal(); startCountdown(state.runMode); } }] : [])
       ]
     });
   }
@@ -1618,6 +1738,26 @@
     showGarage();
   }
 
+  function buySkin(id) {
+    const s = SKINS.find((x) => x.id === id);
+    if (!s || profile.skins.includes(id) || profile.stars < s.cost) return;
+    profile.stars -= s.cost;
+    profile.skins.push(id);
+    profile.skin = id;
+    persist();
+    updateHome();
+    audio.pickup();
+    toast(`${s.name} equipped`, 'looking impossibly good up there');
+    showGarage();
+  }
+
+  function selectSkin(id) {
+    if (!profile.skins.includes(id)) return;
+    profile.skin = id;
+    persist();
+    showGarage();
+  }
+
   /* ---------- flight manual ---------- */
   function showManual() {
     openModal({
@@ -1627,12 +1767,13 @@
       <div class="manual-grid">
         <div class="manual-card"><b>STEER</b><span>← → or A / D keys. On touch screens, drag anywhere on the sky. P pauses the flight.</span></div>
         <div class="manual-card"><b>BOOST</b><span>Hold ↑, W or Space for around 60% more climb at nearly double the burn. Boost is a bet, not a habit.</span></div>
-        <div class="manual-card"><b>FEED THE TANK</b><span>Amber cells refill 30%. Stars bank upgrade money and a 3% sip. Dark clouds, birds, planes, meteors and satellites each cost a plate; white clouds are decor.</span></div>
+        <div class="manual-card"><b>FEED THE TANK</b><span>Amber cells refill 30%. Stars bank upgrade money and a 3% sip. Watch the top edge of the sky: little markers point at incoming supplies. Dark clouds, birds, planes, meteors and satellites each cost a plate; white clouds are decor.</span></div>
         <div class="manual-card"><b>SECOND CHANCE</b><span>A dry tank is not the end: you glide, and the sky throws a few cells your way. Catch one to relight the engine.</span></div>
         <div class="manual-card"><b>TURBO RINGS</b><span>Thread a golden ring for three seconds of free ×1.5 climb. Missing it costs nothing but pride.</span></div>
         <div class="manual-card"><b>THE WORD</b><span>Six letters hide along the climb: A·P·O·G·E·E. Each gives 4% fuel; the full word fills the tanks and plates you in gold for four seconds.</span></div>
         <div class="manual-card"><b>FRISSON</b><span>Grazing an obstacle without touching it grants 1.5% fuel. The sky pays for nerve.</span></div>
-        <div class="manual-card"><b>THE GARAGE</b><span>Banked stars buy a bigger tank, extra plates, better injectors and a pickup magnet — permanently, across every flight.</span></div>
+        <div class="manual-card"><b>THE GARAGE</b><span>Banked stars buy a bigger tank, extra plates, better injectors and a pickup magnet — permanently. The paint shop next door sells nothing but style.</span></div>
+        <div class="manual-card"><b>DAILY FLIGHT</b><span>Once a day, the same seeded sky for every pilot on Earth. Study it, master it, climb it higher than anyone. Retry as often as you like — it never changes before midnight.</span></div>
       </div>`,
       actions: [{ label: 'Understood', primary: true, handler: forceCloseModal }]
     });
@@ -1674,12 +1815,24 @@
   canvas.addEventListener('pointerup', endPointer);
   canvas.addEventListener('pointercancel', endPointer);
 
+  // On-screen boost pad (touch devices only, revealed by CSS media query)
+  const boostPad = $('#boostPad');
+  if (boostPad) {
+    const padOn = (e) => { input.boost = true; boostPad.classList.add('active'); if (e) e.preventDefault(); };
+    const padOff = () => { input.boost = false; boostPad.classList.remove('active'); };
+    boostPad.addEventListener('pointerdown', padOn);
+    boostPad.addEventListener('pointerup', padOff);
+    boostPad.addEventListener('pointercancel', padOff);
+    boostPad.addEventListener('pointerleave', padOff);
+  }
+
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && state.mode === 'flying') togglePause(true);
   });
 
   /* ---------- UI wiring ---------- */
-  $('#startButton').addEventListener('click', () => { forceCloseModal(); startCountdown(); });
+  $('#startButton').addEventListener('click', () => { forceCloseModal(); startCountdown('normal'); });
+  if ($('#dailyButton')) $('#dailyButton').addEventListener('click', () => { forceCloseModal(); startCountdown('daily'); });
   $('#helpButton').addEventListener('click', showManual);
   $('#leaderboardButton').addEventListener('click', showLeaderboard);
   $('#garageButton').addEventListener('click', () => showGarage());
@@ -1687,8 +1840,14 @@
   $('#modalClose').addEventListener('click', closeModal);
   $('#modalBackdrop').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal(); });
   $('#modalBody').addEventListener('click', (e) => {
-    const btn = e.target && typeof e.target.closest === 'function' ? e.target.closest('[data-buy]') : null;
-    if (btn && btn.dataset) buyUpgrade(btn.dataset.buy);
+    const t = e.target && typeof e.target.closest === 'function' ? e.target : null;
+    if (!t) return;
+    const up = t.closest('[data-buy]');
+    if (up && up.dataset) return buyUpgrade(up.dataset.buy);
+    const sb = t.closest('[data-skin-buy]');
+    if (sb && sb.dataset) return buySkin(sb.dataset.skinBuy);
+    const ss = t.closest('[data-skin-select]');
+    if (ss && ss.dataset) return selectSkin(ss.dataset.skinSelect);
   });
 
   const soundButton = $('#soundButton');
@@ -1724,6 +1883,7 @@
     $('#playerName').textContent = String(atlas.identite.pseudo).slice(0, 18).toUpperCase();
   }
   if (granted.classement) $('#leaderboardButton').hidden = false;
+  if ($('#dailyDateLabel')) $('#dailyDateLabel').textContent = dailyLabel();
   resetRun();
   renderSoundButton();
   updateHome();

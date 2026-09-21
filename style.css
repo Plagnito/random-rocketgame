@@ -93,6 +93,15 @@ h1 { margin: 0; font-size: 17px; letter-spacing: .05em; font-weight: 700; }
 .buy-button:hover:not([disabled]) { border-color: var(--flame-hot); transform: translateY(-1px); }
 .buy-button[disabled] { opacity: .38; cursor: not-allowed; border-color: var(--line); background: rgba(16, 28, 56, .6); }
 .buy-button.maxed { opacity: .6; border-color: rgba(140, 231, 168, .5); background: rgba(140, 231, 168, .08); }
+.garage-section { margin: 18px 0 4px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 9.5px; letter-spacing: .18em; color: var(--dim); }
+.skin-swatch { box-shadow: 0 0 12px rgba(148, 180, 235, .18); }
+.daily-button { border-color: rgba(255, 215, 107, .45); color: var(--yellow); }
+.daily-button:hover { border-color: var(--yellow); }
+
+/* ---------- touch boost pad (coarse pointers only) ---------- */
+.boost-pad { display: none; position: absolute; right: 16px; bottom: 16px; z-index: 4; width: 74px; height: 74px; border-radius: 50%; border: 2px solid rgba(255, 122, 69, .6); background: rgba(255, 122, 69, .14); backdrop-filter: blur(4px); color: var(--flame-hot); font-size: 10px; font-weight: 800; letter-spacing: .12em; place-items: center; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; }
+.boost-pad.active { background: rgba(255, 122, 69, .4); box-shadow: 0 0 26px rgba(255, 122, 69, .5); transform: scale(.94); }
+@media (pointer: coarse) { .boost-pad { display: grid; } }
 .hud-best { position: absolute; bottom: 12px; right: 12px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 10px; background: rgba(8, 14, 30, .62); backdrop-filter: blur(6px); font-size: 10px; letter-spacing: .14em; color: var(--muted); }
 .hud-best b { color: var(--sky); }
 

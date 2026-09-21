@@ -82,6 +82,7 @@
             <p class="hero-copy">Steer a stubborn little rocket through birds, storms, planes and meteor showers. Catch fuel cells to keep the tanks alive, thread the traffic, and punch through four layers of sky into deep orbit.</p>
             <div class="home-actions">
               <button class="primary-button" id="startButton" type="button"><span>Ignite the engines</span><b>→</b></button>
+              <button class="secondary-button daily-button" id="dailyButton" type="button">☀️ Daily flight · <span id="dailyDateLabel">…</span></button>
               <button class="secondary-button" id="garageButton" type="button">⚙ Garage</button>
               <button class="secondary-button" id="trophiesButton" type="button">🏆 Trophies</button>
               <button class="secondary-button" id="leaderboardButton" type="button" hidden>Highest climbs ↗</button>
@@ -90,6 +91,7 @@
               <span><b id="bestRunLabel">—</b> BEST CLIMB</span>
               <span><b id="flightsLabel">0</b> FLIGHTS</span>
               <span><b id="totalStarsLabel">0</b> STARS BANKED</span>
+              <span><b id="trophiesCountLabel">0/13</b> TROPHIES</span>
             </div>
           </div>
           <div class="home-lower">
@@ -100,12 +102,13 @@
         </section>
 
         <div class="pause-banner" id="pauseBanner" hidden>PAUSED — PRESS P TO RESUME</div>
+        <button class="boost-pad" id="boostPad" type="button" aria-label="Hold to boost">BOOST</button>
       </section>
 
       <footer class="footer">
-        <span>APO / v1.0.0</span>
+        <span>APO / v1.1.0</span>
         <span class="desktop-hint">← → STEER · HOLD ↑ OR SPACE TO BOOST</span>
-        <span class="touch-hint">DRAG TO STEER</span>
+        <span class="touch-hint">DRAG TO STEER · HOLD BOOST TO BURN</span>
         <span>NO SERVER • NO ACCOUNTS REQUIRED • JUST THRUST</span>
       </footer>
     </main>

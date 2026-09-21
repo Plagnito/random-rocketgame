@@ -1,6 +1,6 @@
 {
   "titre": "Apogee",
-  "description": "Pilot a stubborn little rocket as high as the sky allows. Dodge the traffic, glide out of flame-outs, spell A·P·O·G·E·E, and spend your stars in the garage between flights.",
+  "description": "Pilot a stubborn little rocket as high as the sky allows. Relight flame-outs, spell A·P·O·G·E·E, paint the ship, and fly the same daily sky as everyone else.",
   "emoji": "🚀",
   "couleur": "#ff7a45",
   "tags": ["game", "arcade", "space", "rocket"],
@@ -24,7 +24,8 @@
       { "id": "sur-un-fil", "titre": "Sur un fil", "secret": true, "texte": "Finir un vol au-delà de 3 000 m avec une seule plaque de coque." },
       { "id": "pilote-20", "titre": "Pilote vétéran", "texte": "Cumuler 20 vols." },
       { "id": "anneau-1", "titre": "Premier anneau", "texte": "Traverser un anneau turbo." },
-      { "id": "mecano", "titre": "Mécano du dimanche", "texte": "Acheter une amélioration au garage." }
+      { "id": "mecano", "titre": "Mécano du dimanche", "texte": "Acheter une amélioration au garage." },
+      { "id": "vol-du-jour", "titre": "Ponctuel", "texte": "Terminer le vol du jour — le même ciel que tout le monde." }
     ]
   }
 }
